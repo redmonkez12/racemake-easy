@@ -167,6 +167,17 @@ interface Config {
   units: "metric" | "imperial";
 }
 
+interface StintSummary {
+  patterns: string[];
+  worseningIssues: Issue[];
+  improvingIssues: Issue[];
+}
+
+interface StintAnalysis {
+  laps: LapAnalysis[];
+  stintSummary: StintSummary;
+}
+
 // ============================================================
 // SECTION 2: DATA — Spa-Francorchamps, LMU
 // Car: Porsche 963 LMdh | Conditions: Dry, 24°C track
@@ -489,6 +500,22 @@ export function analyzeLap(
   return { findings, totalDelta };
 }
 
+function analyzeStint(
+  reference: ReferenceLap,
+  driverLaps: DriverLap[]
+): StintAnalysis {
+  const laps = driverLaps.map((lap) => analyzeLap(reference, lap));
+
+  // Placeholder — real implementation in TOM-506
+  const stintSummary: StintSummary = {
+    patterns: [],
+    worseningIssues: [],
+    improvingIssues: [],
+  };
+
+  return { laps, stintSummary };
+}
+
 // ============================================================
 // SECTION 4: COACH
 // ============================================================
@@ -605,4 +632,14 @@ if (checks.every((c) => c.pass)) {
 } else {
   console.log("\n❌ Something's off. Look at the output and trace it back.");
 }
+
+const stintAnalysis = analyzeStint(referenceLap, [driverLap, driverLap2]);
+
+console.log("\n--- Stint Analysis ---");
+stintAnalysis.laps.forEach((lapAnalysis, i) => {
+  const lapResult = generateCoaching(lapAnalysis, config);
+  console.log(`\nLap ${i + 1}:`);
+  console.log(JSON.stringify(lapResult, null, 2));
+});
+console.log("---------------------");
 }
