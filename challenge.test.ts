@@ -107,7 +107,13 @@ describe("detectIssue — late_braking", () => {
       time: 42.0,
       delta: +0.4,
       brakingPoints: [
-        { turn: "T1 La Source", brakeMarker: 80, trailBraking: true, lockup: false, tcActive: false },
+        {
+          turn: "T1 La Source",
+          brakeMarker: 80,
+          trailBraking: true,
+          lockup: false,
+          tcActive: false,
+        },
       ],
       tyreData: { avgSlip: 0.03, peakSlip: 0.06, avgTemp: { fl: 94, fr: 97, rl: 91, rr: 92 } },
       throttleTrace: { earlyLift: false, smoothApplication: true, fullThrottlePercent: 0.8 },
@@ -322,14 +328,14 @@ describe("analyzeStint", () => {
   test("lap2 s2 delta is worse than lap1 s2 delta", () => {
     const lap1s2 = stint.laps[0].findings.find((f) => f.sectorKey === "s2");
     const lap2s2 = stint.laps[1].findings.find((f) => f.sectorKey === "s2");
-    expect(lap2s2!.delta).toBeGreaterThan(lap1s2!.delta);
+    expect(lap2s2?.delta).toBeGreaterThan(lap1s2?.delta);
   });
 
   test("detects issue change in s1 (late_braking → early_lift)", () => {
     const lap1s1 = stint.laps[0].findings.find((f) => f.sectorKey === "s1");
     const lap2s1 = stint.laps[1].findings.find((f) => f.sectorKey === "s1");
-    expect(lap1s1!.issue).not.toBe(lap2s1!.issue);
-    expect(lap2s1!.issue).toBe("early_lift");
+    expect(lap1s1?.issue).not.toBe(lap2s1?.issue);
+    expect(lap2s1?.issue).toBe("early_lift");
   });
 });
 
