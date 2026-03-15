@@ -39,3 +39,50 @@ Lap 2:
 - Validation: implemented requested code edits in `challenge.ts`; did not run `bun run challenge.ts` or other tests per execution constraints.
 - 2026-03-15T11:34:52Z TOM-506: DONE — implemented generateStintSummary in challenge.ts and wired analyzeStint to call it; patterns now include per-sector evolution with worsening/improving issue buckets. Validation: `bun run challenge.ts`.
 2026-03-15T11:35:31Z - TOM-507: DONE — added stint-level coaching output generation in challenge.ts with pitgpt/generic voices and runner logging for generated stint coaching. Validation: code changes completed; did not run bun run challenge.ts or tests in this iteration.
+- 2026-03-15T00:00:00Z TOM-508: DONE — added Level 2 validation checks in challenge.ts for multi-lap/stint output while preserving existing Level 1 checks. Validation: implemented requested code edits in challenge.ts; did not run --- PitGPT Lap Analysis ---
+{
+  "problemSector": 2,
+  "issue": "traction_loss",
+  "timeLost": 1.198,
+  "coachingMessage": "Sector 2 is where the lap falls apart — 1.198 lost. TC is fighting you, tyres are sliding. Smooth the throttle on exit. Don't ask for grip that isn't there."
+}
+---------------------------
+✅ problemSector
+✅ issue
+✅ timeLost
+✅ coachingMessage
+
+✅ Analysis correct.
+
+--- Level 2 Validation ---
+✅ lap2_problemSector
+✅ lap2_issue
+✅ lap2_timeLost
+✅ stintPatterns
+✅ stintWorsening
+✅ stintCoaching
+
+✅ Stint analysis correct.
+
+--- Stint Analysis ---
+
+Lap 1:
+{
+  "problemSector": 2,
+  "issue": "traction_loss",
+  "timeLost": 1.198,
+  "coachingMessage": "Sector 2 is where the lap falls apart — 1.198 lost. TC is fighting you, tyres are sliding. Smooth the throttle on exit. Don't ask for grip that isn't there."
+}
+
+Lap 2:
+{
+  "problemSector": 2,
+  "issue": "traction_loss",
+  "timeLost": 2.316,
+  "coachingMessage": "Sector 2 is where the lap falls apart — 2.316 lost. TC is fighting you, tyres are sliding. Smooth the throttle on exit. Don't ask for grip that isn't there."
+}
+---------------------
+
+--- Stint Coaching ---
+Stint trend: Early Lift emerging in S1 (was late_braking). Tyres are going off in S2. Smooth the exits and don't overdrive the corners. You're lifting early in S1 and S3 — keep that compensation and protect the rear.
+--------------------- or tests per execution constraints.

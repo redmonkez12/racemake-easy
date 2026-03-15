@@ -750,6 +750,7 @@ let stintCoaching = "";
 
 const analysis = analyzeLap(referenceLap, driverLap);
 const result = generateCoaching(analysis, config);
+const stintAnalysis = analyzeStint(referenceLap, [driverLap, driverLap2]);
 
 console.log("--- PitGPT Lap Analysis ---");
 console.log(JSON.stringify(result, null, 2));
@@ -779,7 +780,36 @@ if (checks.every((c) => c.pass)) {
   console.log("\n❌ Something's off. Look at the output and trace it back.");
 }
 
-const stintAnalysis = analyzeStint(referenceLap, [driverLap, driverLap2]);
+if (stintAnalysis.stintSummary.patterns.length > 0) {
+  stintCoaching = generateStintCoaching(stintAnalysis.stintSummary, config);
+}
+
+// --- Level 2 Validation ---
+const lap2Result = generateCoaching(stintAnalysis.laps[1], config);
+
+const stintChecks = [
+  { name: "lap2_problemSector", pass: lap2Result.problemSector === 2 },
+  { name: "lap2_issue", pass: lap2Result.issue === "traction_loss" },
+  { name: "lap2_timeLost", pass: Math.abs(lap2Result.timeLost - 2.316) < 0.01 },
+  { name: "stintPatterns", pass: stintAnalysis.stintSummary.patterns.length > 0 },
+  {
+    name: "stintWorsening",
+    pass: stintAnalysis.stintSummary.worseningIssues.includes("traction_loss"),
+  },
+  {
+    name: "stintCoaching",
+    pass: typeof stintCoaching === "string" && stintCoaching.length > 20,
+  },
+];
+
+console.log("\n--- Level 2 Validation ---");
+stintChecks.forEach((c) => console.log(`${c.pass ? "✅" : "❌"} ${c.name}`));
+
+if (stintChecks.every((c) => c.pass)) {
+  console.log("\n✅ Stint analysis correct.");
+} else {
+  console.log("\n❌ Stint analysis has issues.");
+}
 
 console.log("\n--- Stint Analysis ---");
 stintAnalysis.laps.forEach((lapAnalysis, i) => {
@@ -790,7 +820,6 @@ stintAnalysis.laps.forEach((lapAnalysis, i) => {
 console.log("---------------------");
 
 if (stintAnalysis.stintSummary.patterns.length > 0) {
-  stintCoaching = generateStintCoaching(stintAnalysis.stintSummary, config);
   console.log("\n--- Stint Coaching ---");
   console.log(stintCoaching);
   console.log("---------------------");
