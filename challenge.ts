@@ -500,18 +500,71 @@ export function analyzeLap(
   return { findings, totalDelta };
 }
 
+function generateStintSummary(lapAnalyses: LapAnalysis[]): StintSummary {
+  const sectorKeys = ["s1", "s2", "s3"];
+  const worseningIssues = new Set<Issue>();
+  const improvingIssues = new Set<Issue>();
+  const patterns: string[] = [];
+  const formatIssue = (issue: Issue) =>
+    issue.split("_").map((part) => `${part[0].toUpperCase()}${part.slice(1)}`).join(" ");
+  const formatDelta = (delta: number) => `${delta >= 0 ? "+" : ""}${delta.toFixed(3)}`;
+
+  for (const sectorKey of sectorKeys) {
+    const sectorLabel = sectorKey.toUpperCase();
+
+    for (let i = 1; i < lapAnalyses.length; i++) {
+      const previousLap = lapAnalyses[i - 1].findings.find(
+        (finding) => finding.sectorKey === sectorKey
+      );
+      const currentLap = lapAnalyses[i].findings.find(
+        (finding) => finding.sectorKey === sectorKey
+      );
+
+      if (!currentLap) continue;
+
+      if (!previousLap) {
+        patterns.push(`New issue in ${sectorLabel}: ${currentLap.issue}`);
+        continue;
+      }
+
+      if (previousLap.issue !== currentLap.issue) {
+        patterns.push(
+          `${formatIssue(currentLap.issue)} emerging in ${sectorLabel} (was ${previousLap.issue})`
+        );
+        continue;
+      }
+
+      if (currentLap.delta > previousLap.delta) {
+        worseningIssues.add(currentLap.issue);
+        patterns.push(
+          `${formatIssue(currentLap.issue)} worsening in ${sectorLabel} (${formatDelta(previousLap.delta)} → ${formatDelta(currentLap.delta)})`
+        );
+        continue;
+      }
+
+      if (currentLap.delta < previousLap.delta) {
+        improvingIssues.add(currentLap.issue);
+        patterns.push(
+          `${formatIssue(currentLap.issue)} improving in ${sectorLabel} (${formatDelta(previousLap.delta)} → ${formatDelta(currentLap.delta)})`
+        );
+      }
+    }
+  }
+
+  return {
+    patterns,
+    worseningIssues: [...worseningIssues],
+    improvingIssues: [...improvingIssues],
+  };
+}
+
 function analyzeStint(
   reference: ReferenceLap,
   driverLaps: DriverLap[]
 ): StintAnalysis {
   const laps = driverLaps.map((lap) => analyzeLap(reference, lap));
 
-  // Placeholder — real implementation in TOM-506
-  const stintSummary: StintSummary = {
-    patterns: [],
-    worseningIssues: [],
-    improvingIssues: [],
-  };
+  const stintSummary = generateStintSummary(laps);
 
   return { laps, stintSummary };
 }
