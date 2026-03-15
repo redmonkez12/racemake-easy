@@ -140,7 +140,7 @@ interface DriverLap {
   sectors: Record<string, DriverSector>;
 }
 
-type Issue = "late_braking" | "early_lift" | "traction_loss" | "overcorrection";
+export type Issue = "late_braking" | "early_lift" | "traction_loss" | "overcorrection";
 
 interface SectorFinding {
   sector: number;
@@ -167,7 +167,7 @@ interface Config {
   units: "metric" | "imperial";
 }
 
-interface StintSummary {
+export interface StintSummary {
   patterns: string[];
   worseningIssues: Issue[];
   improvingIssues: Issue[];

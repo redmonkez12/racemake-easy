@@ -23,10 +23,10 @@ export function getProjectName(): string {
   return name;
 }
 
-export async function graphql(
+export async function graphql<T = Record<string, unknown>>(
   query: string,
   variables?: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
+): Promise<T> {
   const apiKey = getApiKey();
   const payload: Record<string, unknown> = { query };
   if (variables) payload.variables = variables;
@@ -56,5 +56,5 @@ export async function graphql(
     process.exit(1);
   }
 
-  return (body.data ?? {}) as Record<string, unknown>;
+  return (body.data ?? {}) as T;
 }

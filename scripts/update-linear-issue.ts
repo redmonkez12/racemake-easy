@@ -21,6 +21,23 @@
 
 import { graphql } from "./common-linear.js";
 
+interface LinearIssueDetail {
+  id: string;
+  identifier: string;
+  title: string;
+  description: string | null;
+  team: { id: string };
+  state: { id: string; name: string; type: string };
+}
+
+interface IssueResponse {
+  issue: LinearIssueDetail | null;
+}
+
+interface WorkflowStatesResponse {
+  workflowStates: { nodes: Array<{ id: string; name: string; type: string }> };
+}
+
 const STATE_TARGETS: Record<string, string[]> = {
   start: ["In Progress"],
   done: ["In Review", "Done", "Closed"],
@@ -28,8 +45,8 @@ const STATE_TARGETS: Record<string, string[]> = {
   failed: ["Todo", "Backlog"],
 };
 
-async function findIssueByIdentifier(identifier: string): Promise<any | null> {
-  const data = await graphql(
+async function findIssueByIdentifier(identifier: string): Promise<LinearIssueDetail | null> {
+  const data = await graphql<IssueResponse>(
     `
     query($id: String!) {
       issue(id: $id) {
@@ -44,13 +61,13 @@ async function findIssueByIdentifier(identifier: string): Promise<any | null> {
     `,
     { id: identifier },
   );
-  return (data.issue as any) ?? null;
+  return data.issue ?? null;
 }
 
 async function getTeamStates(
   teamId: string,
 ): Promise<Array<{ id: string; name: string; type: string }>> {
-  const data = await graphql(
+  const data = await graphql<WorkflowStatesResponse>(
     `
     query($teamId: ID!) {
       workflowStates(filter: { team: { id: { eq: $teamId } } }) {
@@ -60,7 +77,7 @@ async function getTeamStates(
     `,
     { teamId },
   );
-  return (data.workflowStates as any)?.nodes ?? [];
+  return data.workflowStates?.nodes ?? [];
 }
 
 async function transitionIssue(issueId: string, stateId: string): Promise<void> {
@@ -184,9 +201,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const issueId = issue.id as string;
-  const teamId = (issue.team as any).id as string;
-  const description = issue.description as string | null | undefined;
+  const issueId = issue.id;
+  const teamId = issue.team.id;
+  const description = issue.description;
 
   // State transition for start/done/blocked/failed
   if (action in STATE_TARGETS) {

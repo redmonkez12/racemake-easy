@@ -62,6 +62,30 @@ interface Issue {
   children: { nodes: ChildIssue[] };
 }
 
+interface ProjectsResponse {
+  projects: { nodes: Array<{ id: string; name: string }> };
+}
+
+interface IssuesResponse {
+  issues: { nodes: Issue[] };
+}
+
+interface IssueRelation {
+  type: string;
+  issue: { id: string; identifier: string; state: { type: string } };
+}
+
+interface BlockedIssue {
+  id: string;
+  identifier: string;
+  labels: { nodes: Array<{ id: string; name: string }> };
+  inverseRelations: { nodes: IssueRelation[] };
+}
+
+interface BlockedIssuesResponse {
+  issues: { nodes: BlockedIssue[] };
+}
+
 const ISSUE_FIELDS = `
   id
   identifier
@@ -90,7 +114,7 @@ const ISSUE_FIELDS = `
 `;
 
 async function findProjectId(projectName: string): Promise<string | null> {
-  const data = await graphql(
+  const data = await graphql<ProjectsResponse>(
     `
     query($filter: ProjectFilter) {
       projects(filter: $filter) {
@@ -100,10 +124,7 @@ async function findProjectId(projectName: string): Promise<string | null> {
     `,
     { filter: { name: { eq: projectName } } },
   );
-  const nodes = ((data.projects as any)?.nodes ?? []) as Array<{
-    id: string;
-    name: string;
-  }>;
+  const nodes = data.projects?.nodes ?? [];
   for (const node of nodes) {
     if (node.name === projectName) return node.id;
   }
@@ -111,7 +132,7 @@ async function findProjectId(projectName: string): Promise<string | null> {
 }
 
 async function fetchInProgressIssues(projectId: string): Promise<Issue[]> {
-  const data = await graphql(
+  const data = await graphql<IssuesResponse>(
     `
     query($projectId: ID!) {
       issues(
@@ -128,11 +149,11 @@ async function fetchInProgressIssues(projectId: string): Promise<Issue[]> {
     `,
     { projectId },
   );
-  return ((data.issues as any)?.nodes ?? []) as Issue[];
+  return data.issues?.nodes ?? [];
 }
 
 async function fetchCandidateIssues(projectId: string): Promise<Issue[]> {
-  const data = await graphql(
+  const data = await graphql<IssuesResponse>(
     `
     query($projectId: ID!) {
       issues(
@@ -149,7 +170,7 @@ async function fetchCandidateIssues(projectId: string): Promise<Issue[]> {
     `,
     { projectId },
   );
-  return ((data.issues as any)?.nodes ?? []) as Issue[];
+  return data.issues?.nodes ?? [];
 }
 
 function issueNumber(issue: { identifier: string }): number {
@@ -215,8 +236,8 @@ ${desc}
   writeFileSync(join(STATE_DIR, "current-task.md"), content);
 }
 
-async function fetchBlockedIssuesWithRelations(projectId: string): Promise<any[]> {
-  const data = await graphql(
+async function fetchBlockedIssuesWithRelations(projectId: string): Promise<BlockedIssue[]> {
+  const data = await graphql<BlockedIssuesResponse>(
     `
     query($projectId: ID!) {
       issues(
@@ -247,7 +268,7 @@ async function fetchBlockedIssuesWithRelations(projectId: string): Promise<any[]
     `,
     { projectId },
   );
-  return (data.issues as any)?.nodes ?? [];
+  return data.issues?.nodes ?? [];
 }
 
 async function removeLabel(issueId: string, labelIds: string[]): Promise<void> {
@@ -269,18 +290,15 @@ async function autoUnblock(projectId: string): Promise<string[]> {
   const unblocked: string[] = [];
 
   for (const issue of blockedIssues) {
-    const relations = (issue.inverseRelations?.nodes ?? []) as any[];
-    const blockers = relations.filter((r: any) => r.type === "blocks").map((r: any) => r.issue);
+    const relations = issue.inverseRelations?.nodes ?? [];
+    const blockers = relations.filter((r) => r.type === "blocks").map((r) => r.issue);
 
     if (blockers.length === 0) continue;
 
-    const allResolved = blockers.every((b: any) => COMPLETED_STATE_TYPES.has(b.state?.type));
+    const allResolved = blockers.every((b) => COMPLETED_STATE_TYPES.has(b.state?.type));
 
     if (allResolved) {
-      const labels = (issue.labels?.nodes ?? []) as Array<{
-        id: string;
-        name: string;
-      }>;
+      const labels = issue.labels?.nodes ?? [];
       const remainingIds = labels
         .filter((lb) => lb.name.toLowerCase() !== "blocked")
         .map((lb) => lb.id);

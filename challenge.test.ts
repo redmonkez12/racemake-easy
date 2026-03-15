@@ -8,6 +8,7 @@ import {
   generateCoaching,
   generateStintCoaching,
   referenceLap,
+  type StintSummary,
 } from "./challenge";
 
 const config = { coachVoice: "generic" as const, units: "metric" as const };
@@ -359,15 +360,39 @@ describe("generateStintCoaching — generic", () => {
 });
 
 describe("generateStintCoaching — no patterns", () => {
-  const emptySummary = { patterns: [], worseningIssues: [] as string[], improvingIssues: [] as string[] };
+  const emptySummary: StintSummary = { patterns: [], worseningIssues: [], improvingIssues: [] };
 
   test("generic returns no-trend message", () => {
-    const coaching = generateStintCoaching(emptySummary as any, config);
+    const coaching = generateStintCoaching(emptySummary, config);
     expect(coaching).toContain("no significant cross-lap trend");
   });
 
   test("pitgpt returns flat trend message", () => {
-    const coaching = generateStintCoaching(emptySummary as any, pitgptConfig);
+    const coaching = generateStintCoaching(emptySummary, pitgptConfig);
     expect(coaching).toContain("flat");
+  });
+});
+
+describe("generateStintCoaching — improving issues", () => {
+  const improvingSummary: StintSummary = {
+    patterns: ["Late Braking improving in S1 (+0.387 → +0.200)"],
+    worseningIssues: [],
+    improvingIssues: ["late_braking"],
+  };
+
+  test("generic includes the improving pattern in output", () => {
+    const coaching = generateStintCoaching(improvingSummary, config);
+    expect(coaching).toContain("Late Braking improving in S1");
+  });
+
+  test("generic does not mention throttle when no worsening traction_loss", () => {
+    const coaching = generateStintCoaching(improvingSummary, config);
+    expect(coaching.toLowerCase()).not.toContain("throttle");
+  });
+
+  test("pitgpt includes stint trend without tyre degradation warning", () => {
+    const coaching = generateStintCoaching(improvingSummary, pitgptConfig);
+    expect(coaching).toContain("Stint trend");
+    expect(coaching.toLowerCase()).not.toContain("tyre");
   });
 });
