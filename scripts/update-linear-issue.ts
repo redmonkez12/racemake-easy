@@ -42,13 +42,13 @@ async function findIssueByIdentifier(identifier: string): Promise<any | null> {
       }
     }
     `,
-    { id: identifier }
+    { id: identifier },
   );
   return (data.issue as any) ?? null;
 }
 
 async function getTeamStates(
-  teamId: string
+  teamId: string,
 ): Promise<Array<{ id: string; name: string; type: string }>> {
   const data = await graphql(
     `
@@ -58,15 +58,12 @@ async function getTeamStates(
       }
     }
     `,
-    { teamId }
+    { teamId },
   );
-  return ((data.workflowStates as any)?.nodes ?? []);
+  return (data.workflowStates as any)?.nodes ?? [];
 }
 
-async function transitionIssue(
-  issueId: string,
-  stateId: string
-): Promise<void> {
+async function transitionIssue(issueId: string, stateId: string): Promise<void> {
   await graphql(
     `
     mutation($id: String!, $stateId: String!) {
@@ -75,7 +72,7 @@ async function transitionIssue(
       }
     }
     `,
-    { id: issueId, stateId }
+    { id: issueId, stateId },
   );
 }
 
@@ -88,33 +85,27 @@ async function addComment(issueId: string, body: string): Promise<void> {
       }
     }
     `,
-    { issueId, body }
+    { issueId, body },
   );
 }
 
 async function resolveTargetState(
   teamId: string,
-  action: string
+  action: string,
 ): Promise<{ id: string; name: string } | null> {
   const candidates = STATE_TARGETS[action];
   if (!candidates) return null;
 
   const states = await getTeamStates(teamId);
   for (const candidate of candidates) {
-    const match = states.find(
-      (s) => s.name.toLowerCase() === candidate.toLowerCase()
-    );
+    const match = states.find((s) => s.name.toLowerCase() === candidate.toLowerCase());
     if (match) return match;
   }
   return null;
 }
 
 function normalize(text: string): string {
-  return text
-    .replace(/[`*_]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+  return text.replace(/[`*_]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 function parseMetCriteria(acBlock: string): string[] {
@@ -129,7 +120,7 @@ function parseMetCriteria(acBlock: string): string[] {
 async function updateDescriptionCheckboxes(
   issueId: string,
   description: string | null | undefined,
-  acBlock: string
+  acBlock: string,
 ): Promise<void> {
   if (!description || !description.includes("- [ ]")) return;
 
@@ -141,8 +132,7 @@ async function updateDescriptionCheckboxes(
   for (const line of lines) {
     if (line.includes("- [ ]")) {
       const shouldCheck =
-        metCriteria.length === 0 ||
-        metCriteria.some((c) => normalize(line).includes(c));
+        metCriteria.length === 0 || metCriteria.some((c) => normalize(line).includes(c));
       if (shouldCheck) {
         updatedLines.push(line.replace("- [ ]", "- [x]"));
         changed = true;
@@ -162,7 +152,7 @@ async function updateDescriptionCheckboxes(
       }
     }
     `,
-    { id: issueId, description: updatedLines.join("\n") }
+    { id: issueId, description: updatedLines.join("\n") },
   );
   console.log(`OK: description checkboxes updated for ${issueId}`);
 }
@@ -171,7 +161,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args.length < 2) {
     console.log(
-      "Usage: npx tsx scripts/update-linear-issue.ts <action> <issue-identifier> [comment]"
+      "Usage: npx tsx scripts/update-linear-issue.ts <action> <issue-identifier> [comment]",
     );
     process.exit(1);
   }
@@ -180,17 +170,10 @@ async function main(): Promise<void> {
   const identifier = args[1];
   const commentText = args[2] ?? "";
 
-  const validActions = new Set([
-    "start",
-    "done",
-    "blocked",
-    "failed",
-    "needs_split",
-    "comment",
-  ]);
+  const validActions = new Set(["start", "done", "blocked", "failed", "needs_split", "comment"]);
   if (!validActions.has(action)) {
     console.error(
-      `ERROR: unknown action '${action}'. Valid: ${[...validActions].sort().join(", ")}`
+      `ERROR: unknown action '${action}'. Valid: ${[...validActions].sort().join(", ")}`,
     );
     process.exit(1);
   }
@@ -212,9 +195,7 @@ async function main(): Promise<void> {
       await transitionIssue(issueId, target.id);
       console.log(`OK: ${identifier} -> ${target.name}`);
     } else {
-      console.log(
-        `WARN: no matching state for action '${action}', skipping transition.`
-      );
+      console.log(`WARN: no matching state for action '${action}', skipping transition.`);
     }
   }
 
@@ -226,10 +207,7 @@ async function main(): Promise<void> {
 
   // Comments
   if (action === "start") {
-    await addComment(
-      issueId,
-      "Ralph agent picked up this issue and started working on it."
-    );
+    await addComment(issueId, "Ralph agent picked up this issue and started working on it.");
     console.log(`OK: comment added to ${identifier}`);
   } else if (action === "comment") {
     if (!commentText) {

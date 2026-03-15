@@ -8,9 +8,7 @@ const LINEAR_API_URL = "https://api.linear.app/graphql";
 export function getApiKey(): string {
   const key = (process.env.LINEAR_API_KEY ?? "").trim();
   if (!key) {
-    process.stderr.write(
-      "ERROR: LINEAR_API_KEY environment variable is not set.\n"
-    );
+    process.stderr.write("ERROR: LINEAR_API_KEY environment variable is not set.\n");
     process.exit(1);
   }
   return key;
@@ -19,9 +17,7 @@ export function getApiKey(): string {
 export function getProjectName(): string {
   const name = (process.env.LINEAR_PROJECT_NAME ?? "").trim();
   if (!name) {
-    process.stderr.write(
-      "ERROR: LINEAR_PROJECT_NAME environment variable is not set.\n"
-    );
+    process.stderr.write("ERROR: LINEAR_PROJECT_NAME environment variable is not set.\n");
     process.exit(1);
   }
   return name;
@@ -29,7 +25,7 @@ export function getProjectName(): string {
 
 export async function graphql(
   query: string,
-  variables?: Record<string, unknown>
+  variables?: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const apiKey = getApiKey();
   const payload: Record<string, unknown> = { query };
@@ -46,9 +42,7 @@ export async function graphql(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    process.stderr.write(
-      `ERROR: Linear API returned ${response.status}: ${errorBody}\n`
-    );
+    process.stderr.write(`ERROR: Linear API returned ${response.status}: ${errorBody}\n`);
     process.exit(1);
   }
 
@@ -58,9 +52,7 @@ export async function graphql(
   };
 
   if (body.errors) {
-    process.stderr.write(
-      `ERROR: Linear GraphQL errors: ${JSON.stringify(body.errors, null, 2)}\n`
-    );
+    process.stderr.write(`ERROR: Linear GraphQL errors: ${JSON.stringify(body.errors, null, 2)}\n`);
     process.exit(1);
   }
 

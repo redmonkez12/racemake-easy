@@ -17,9 +17,9 @@
  * Writes state/current-task.md and prints a machine-readable result line.
  */
 
-import { writeFileSync, mkdirSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { getProjectName, graphql } from "./common-linear.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -98,7 +98,7 @@ async function findProjectId(projectName: string): Promise<string | null> {
       }
     }
     `,
-    { filter: { name: { eq: projectName } } }
+    { filter: { name: { eq: projectName } } },
   );
   const nodes = ((data.projects as any)?.nodes ?? []) as Array<{
     id: string;
@@ -126,7 +126,7 @@ async function fetchInProgressIssues(projectId: string): Promise<Issue[]> {
       }
     }
     `,
-    { projectId }
+    { projectId },
   );
   return ((data.issues as any)?.nodes ?? []) as Issue[];
 }
@@ -147,7 +147,7 @@ async function fetchCandidateIssues(projectId: string): Promise<Issue[]> {
       }
     }
     `,
-    { projectId }
+    { projectId },
   );
   return ((data.issues as any)?.nodes ?? []) as Issue[];
 }
@@ -165,28 +165,22 @@ function isParent(issue: Issue | ChildIssue): boolean {
 }
 
 function isBlocked(issue: Issue | ChildIssue): boolean {
-  return (issue.labels?.nodes ?? []).some(
-    (label) => label.name.toLowerCase() === "blocked"
-  );
+  return (issue.labels?.nodes ?? []).some((label) => label.name.toLowerCase() === "blocked");
 }
 
 function pickBestIssue(issues: Issue[]): Issue | null {
-  for (const issue of [...issues].sort(
-    (a, b) => issueNumber(a) - issueNumber(b)
-  )) {
+  for (const issue of [...issues].sort((a, b) => issueNumber(a) - issueNumber(b))) {
     if (!isParent(issue)) {
       if (!isBlocked(issue)) return issue;
     } else {
       const children = issue.children?.nodes ?? [];
       const eligible = children.filter(
         (c) =>
-          !isParent(c) &&
-          !isBlocked(c) &&
-          ["backlog", "unstarted"].includes(c.state?.type ?? "")
+          !isParent(c) && !isBlocked(c) && ["backlog", "unstarted"].includes(c.state?.type ?? ""),
       );
       if (eligible.length > 0) {
         return eligible.reduce((best, c) =>
-          issueNumber(c) < issueNumber(best) ? c : best
+          issueNumber(c) < issueNumber(best) ? c : best,
         ) as unknown as Issue;
       }
     }
@@ -221,9 +215,7 @@ ${desc}
   writeFileSync(join(STATE_DIR, "current-task.md"), content);
 }
 
-async function fetchBlockedIssuesWithRelations(
-  projectId: string
-): Promise<any[]> {
+async function fetchBlockedIssuesWithRelations(projectId: string): Promise<any[]> {
   const data = await graphql(
     `
     query($projectId: ID!) {
@@ -253,15 +245,12 @@ async function fetchBlockedIssuesWithRelations(
       }
     }
     `,
-    { projectId }
+    { projectId },
   );
-  return ((data.issues as any)?.nodes ?? []);
+  return (data.issues as any)?.nodes ?? [];
 }
 
-async function removeLabel(
-  issueId: string,
-  labelIds: string[]
-): Promise<void> {
+async function removeLabel(issueId: string, labelIds: string[]): Promise<void> {
   await graphql(
     `
     mutation($id: String!, $labelIds: [String!]!) {
@@ -270,7 +259,7 @@ async function removeLabel(
       }
     }
     `,
-    { id: issueId, labelIds }
+    { id: issueId, labelIds },
   );
 }
 
@@ -281,15 +270,11 @@ async function autoUnblock(projectId: string): Promise<string[]> {
 
   for (const issue of blockedIssues) {
     const relations = (issue.inverseRelations?.nodes ?? []) as any[];
-    const blockers = relations
-      .filter((r: any) => r.type === "blocks")
-      .map((r: any) => r.issue);
+    const blockers = relations.filter((r: any) => r.type === "blocks").map((r: any) => r.issue);
 
     if (blockers.length === 0) continue;
 
-    const allResolved = blockers.every((b: any) =>
-      COMPLETED_STATE_TYPES.has(b.state?.type)
-    );
+    const allResolved = blockers.every((b: any) => COMPLETED_STATE_TYPES.has(b.state?.type));
 
     if (allResolved) {
       const labels = (issue.labels?.nodes ?? []) as Array<{
@@ -330,9 +315,7 @@ async function main(): Promise<void> {
   const inProgress = await fetchInProgressIssues(projectId);
   const resumable = filterEligible(inProgress);
   if (resumable.length > 0) {
-    const best = resumable.reduce((a, b) =>
-      issueNumber(a) <= issueNumber(b) ? a : b
-    );
+    const best = resumable.reduce((a, b) => (issueNumber(a) <= issueNumber(b) ? a : b));
     writeCurrentTask(best);
 
     const blockedWip = inProgress.filter(isBlocked).map((i) => i.identifier);
@@ -347,16 +330,14 @@ async function main(): Promise<void> {
   // Phase 2: pick from backlog/unstarted
   const issues = await fetchCandidateIssues(projectId);
   if (issues.length === 0) {
-    console.log(
-      `NO_TASK_FOUND: no open issues in project '${projectName}'.`
-    );
+    console.log(`NO_TASK_FOUND: no open issues in project '${projectName}'.`);
     process.exit(0);
   }
 
   const best = pickBestIssue(issues);
   if (!best) {
     console.log(
-      "NO_TASK_FOUND: all open issues are parent/epic containers, blocked, or have no open leaf tasks."
+      "NO_TASK_FOUND: all open issues are parent/epic containers, blocked, or have no open leaf tasks.",
     );
     process.exit(0);
   }

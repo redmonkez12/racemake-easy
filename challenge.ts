@@ -190,9 +190,7 @@ export const referenceLap: ReferenceLap = {
   sectors: {
     s1: {
       time: 41.203,
-      brakingPoints: [
-        { turn: "T1 La Source", brakeMarker: 92, trailBraking: true },
-      ],
+      brakingPoints: [{ turn: "T1 La Source", brakeMarker: 92, trailBraking: true }],
     },
     s2: {
       time: 48.887,
@@ -412,7 +410,7 @@ const driverLap2: DriverLap = {
  */
 export function detectIssue(
   driverSector: DriverSector,
-  refSector: ReferenceSector
+  refSector: ReferenceSector,
 ): { issue: Issue; details: string } {
   const { brakingPoints, tyreData, throttleTrace } = driverSector;
 
@@ -467,10 +465,7 @@ export function detectIssue(
  * Analyze a driver lap against a reference lap.
  * Returns findings for each sector, sorted by time lost (worst first).
  */
-export function analyzeLap(
-  reference: ReferenceLap,
-  driver: DriverLap
-): LapAnalysis {
+export function analyzeLap(reference: ReferenceLap, driver: DriverLap): LapAnalysis {
   const sectorKeys = Object.keys(driver.sectors);
   const findings: SectorFinding[] = [];
 
@@ -480,7 +475,7 @@ export function analyzeLap(
 
     if (!driverSector || !refSector) continue;
 
-    const sectorNum = parseInt(key.replace("s", ""));
+    const sectorNum = parseInt(key.replace("s", ""), 10);
     const { issue, details } = detectIssue(driverSector, refSector);
 
     findings.push({
@@ -506,7 +501,10 @@ function generateStintSummary(lapAnalyses: LapAnalysis[]): StintSummary {
   const improvingIssues = new Set<Issue>();
   const patterns: string[] = [];
   const formatIssue = (issue: Issue) =>
-    issue.split("_").map((part) => `${part[0].toUpperCase()}${part.slice(1)}`).join(" ");
+    issue
+      .split("_")
+      .map((part) => `${part[0].toUpperCase()}${part.slice(1)}`)
+      .join(" ");
   const formatDelta = (delta: number) => `${delta >= 0 ? "+" : ""}${delta.toFixed(3)}`;
 
   for (const sectorKey of sectorKeys) {
@@ -514,11 +512,9 @@ function generateStintSummary(lapAnalyses: LapAnalysis[]): StintSummary {
 
     for (let i = 1; i < lapAnalyses.length; i++) {
       const previousLap = lapAnalyses[i - 1].findings.find(
-        (finding) => finding.sectorKey === sectorKey
+        (finding) => finding.sectorKey === sectorKey,
       );
-      const currentLap = lapAnalyses[i].findings.find(
-        (finding) => finding.sectorKey === sectorKey
-      );
+      const currentLap = lapAnalyses[i].findings.find((finding) => finding.sectorKey === sectorKey);
 
       if (!currentLap) continue;
 
@@ -529,7 +525,7 @@ function generateStintSummary(lapAnalyses: LapAnalysis[]): StintSummary {
 
       if (previousLap.issue !== currentLap.issue) {
         patterns.push(
-          `${formatIssue(currentLap.issue)} emerging in ${sectorLabel} (was ${previousLap.issue})`
+          `${formatIssue(currentLap.issue)} emerging in ${sectorLabel} (was ${previousLap.issue})`,
         );
         continue;
       }
@@ -537,7 +533,7 @@ function generateStintSummary(lapAnalyses: LapAnalysis[]): StintSummary {
       if (currentLap.delta > previousLap.delta) {
         worseningIssues.add(currentLap.issue);
         patterns.push(
-          `${formatIssue(currentLap.issue)} worsening in ${sectorLabel} (${formatDelta(previousLap.delta)} → ${formatDelta(currentLap.delta)})`
+          `${formatIssue(currentLap.issue)} worsening in ${sectorLabel} (${formatDelta(previousLap.delta)} → ${formatDelta(currentLap.delta)})`,
         );
         continue;
       }
@@ -545,7 +541,7 @@ function generateStintSummary(lapAnalyses: LapAnalysis[]): StintSummary {
       if (currentLap.delta < previousLap.delta) {
         improvingIssues.add(currentLap.issue);
         patterns.push(
-          `${formatIssue(currentLap.issue)} improving in ${sectorLabel} (${formatDelta(previousLap.delta)} → ${formatDelta(currentLap.delta)})`
+          `${formatIssue(currentLap.issue)} improving in ${sectorLabel} (${formatDelta(previousLap.delta)} → ${formatDelta(currentLap.delta)})`,
         );
       }
     }
@@ -558,10 +554,7 @@ function generateStintSummary(lapAnalyses: LapAnalysis[]): StintSummary {
   };
 }
 
-function analyzeStint(
-  reference: ReferenceLap,
-  driverLaps: DriverLap[]
-): StintAnalysis {
+function analyzeStint(reference: ReferenceLap, driverLaps: DriverLap[]): StintAnalysis {
   const laps = driverLaps.map((lap) => analyzeLap(reference, lap));
 
   const stintSummary = generateStintSummary(laps);
@@ -622,10 +615,7 @@ function generatePitGPTMessage(finding: SectorFinding): string {
  * Take a lap analysis and produce the final coaching output.
  * Focuses on the worst sector — that's where the time is.
  */
-export function generateCoaching(
-  analysis: LapAnalysis,
-  config: Config
-): CoachingOutput {
+export function generateCoaching(analysis: LapAnalysis, config: Config): CoachingOutput {
   const worst = analysis.findings[0];
 
   if (!worst) {
@@ -662,10 +652,10 @@ function generatePitGPTStintMessage(summary: StintSummary): string {
   }
 
   const earlyLiftPatterns = summary.patterns.filter((pattern) =>
-    ["early_lift", "early lift"].some((token) => pattern.toLowerCase().includes(token))
+    ["early_lift", "early lift"].some((token) => pattern.toLowerCase().includes(token)),
   );
   const tractionPatterns = summary.patterns.filter((pattern) =>
-    pattern.toLowerCase().includes("traction")
+    pattern.toLowerCase().includes("traction"),
   );
 
   const earlyLiftSectors = earlyLiftPatterns
@@ -676,30 +666,31 @@ function generatePitGPTStintMessage(summary: StintSummary): string {
     .filter(Boolean);
 
   const uniqueEarlyLiftSectors = [...new Set(earlyLiftSectors)];
-  const earlyLiftSectorClause = uniqueEarlyLiftSectors.length > 0
-    ? ` in ${uniqueEarlyLiftSectors.join(" and ")}`
-    : "";
+  const earlyLiftSectorClause =
+    uniqueEarlyLiftSectors.length > 0 ? ` in ${uniqueEarlyLiftSectors.join(" and ")}` : "";
 
-  const tractionSectorClause = [...new Set(
-    tractionPatterns
-      .map((pattern) => {
-        const sectorMatch = pattern.match(/S\d+/);
-        return sectorMatch?.[0];
-      })
-      .filter(Boolean)
-  )].join(" and ");
+  const tractionSectorClause = [
+    ...new Set(
+      tractionPatterns
+        .map((pattern) => {
+          const sectorMatch = pattern.match(/S\d+/);
+          return sectorMatch?.[0];
+        })
+        .filter(Boolean),
+    ),
+  ].join(" and ");
 
   const tractionClause = tractionSectorClause ? ` in ${tractionSectorClause}` : "";
 
   if (summary.worseningIssues.includes("traction_loss")) {
     messages.push(
-      `Tyres are going off${tractionClause}. Smooth the exits and don't overdrive the corners.`
+      `Tyres are going off${tractionClause}. Smooth the exits and don't overdrive the corners.`,
     );
   }
 
   if (earlyLiftPatterns.length > 0) {
     messages.push(
-      `You're lifting early${earlyLiftSectorClause} — keep that compensation and protect the rear.`
+      `You're lifting early${earlyLiftSectorClause} — keep that compensation and protect the rear.`,
     );
   }
 
@@ -723,16 +714,14 @@ function generateGenericStintMessage(summary: StintSummary): string {
   }
 
   const earlyLiftPatterns = summary.patterns.some((pattern) =>
-    pattern.toLowerCase().includes("early lift")
+    pattern.toLowerCase().includes("early lift"),
   );
 
   if (earlyLiftPatterns) {
     recommendations.push("early lift behavior indicates tyre degradation compensation.");
   }
 
-  const recommendationText = recommendations.length > 0
-    ? ` ${recommendations.join(" ")}`
-    : "";
+  const recommendationText = recommendations.length > 0 ? ` ${recommendations.join(" ")}` : "";
 
   return `Stint analysis: ${patternText}.${recommendationText}`;
 }
@@ -742,88 +731,86 @@ function generateGenericStintMessage(summary: StintSummary): string {
 // ============================================================
 
 if (import.meta.main) {
-const config: Config = {
-  coachVoice: "pitgpt",
-  units: "metric",
-};
-let stintCoaching = "";
+  const config: Config = {
+    coachVoice: "pitgpt",
+    units: "metric",
+  };
+  let stintCoaching = "";
 
-const analysis = analyzeLap(referenceLap, driverLap);
-const result = generateCoaching(analysis, config);
-const stintAnalysis = analyzeStint(referenceLap, [driverLap, driverLap2]);
+  const analysis = analyzeLap(referenceLap, driverLap);
+  const result = generateCoaching(analysis, config);
+  const stintAnalysis = analyzeStint(referenceLap, [driverLap, driverLap2]);
 
-console.log("--- PitGPT Lap Analysis ---");
-console.log(JSON.stringify(result, null, 2));
-console.log("---------------------------");
+  console.log("--- PitGPT Lap Analysis ---");
+  console.log(JSON.stringify(result, null, 2));
+  console.log("---------------------------");
 
-// --- Validation ---
-const checks = [
-  { name: "problemSector", pass: result.problemSector === 2 },
-  {
-    name: "issue",
-    pass: (["late_braking", "traction_loss"] as string[]).includes(result.issue),
-  },
-  { name: "timeLost", pass: Math.abs(result.timeLost - 1.198) < 0.01 },
-  {
-    name: "coachingMessage",
-    pass:
-      typeof result.coachingMessage === "string" &&
-      result.coachingMessage.length > 20,
-  },
-];
+  // --- Validation ---
+  const checks = [
+    { name: "problemSector", pass: result.problemSector === 2 },
+    {
+      name: "issue",
+      pass: (["late_braking", "traction_loss"] as string[]).includes(result.issue),
+    },
+    { name: "timeLost", pass: Math.abs(result.timeLost - 1.198) < 0.01 },
+    {
+      name: "coachingMessage",
+      pass: typeof result.coachingMessage === "string" && result.coachingMessage.length > 20,
+    },
+  ];
 
-checks.forEach((c) => console.log(`${c.pass ? "✅" : "❌"} ${c.name}`));
+  for (const c of checks) console.log(`${c.pass ? "✅" : "❌"} ${c.name}`);
 
-if (checks.every((c) => c.pass)) {
-  console.log("\n✅ Analysis correct.");
-} else {
-  console.log("\n❌ Something's off. Look at the output and trace it back.");
-}
+  if (checks.every((c) => c.pass)) {
+    console.log("\n✅ Analysis correct.");
+  } else {
+    console.log("\n❌ Something's off. Look at the output and trace it back.");
+  }
 
-if (stintAnalysis.stintSummary.patterns.length > 0) {
-  stintCoaching = generateStintCoaching(stintAnalysis.stintSummary, config);
-}
+  if (stintAnalysis.stintSummary.patterns.length > 0) {
+    stintCoaching = generateStintCoaching(stintAnalysis.stintSummary, config);
+  }
 
-// --- Level 2 Validation ---
-const lap2Result = generateCoaching(stintAnalysis.laps[1], config);
+  // --- Level 2 Validation ---
+  const lap2Result = generateCoaching(stintAnalysis.laps[1], config);
 
-const stintChecks = [
-  { name: "lap2_problemSector", pass: lap2Result.problemSector === 2 },
-  { name: "lap2_issue", pass: lap2Result.issue === "traction_loss" },
-  { name: "lap2_timeLost", pass: Math.abs(lap2Result.timeLost - 2.316) < 0.01 },
-  { name: "stintPatterns", pass: stintAnalysis.stintSummary.patterns.length > 0 },
-  {
-    name: "stintWorsening",
-    pass: stintAnalysis.stintSummary.worseningIssues.includes("traction_loss"),
-  },
-  {
-    name: "stintCoaching",
-    pass: typeof stintCoaching === "string" && stintCoaching.length > 20,
-  },
-];
+  const stintChecks = [
+    { name: "lap2_problemSector", pass: lap2Result.problemSector === 2 },
+    { name: "lap2_issue", pass: lap2Result.issue === "traction_loss" },
+    { name: "lap2_timeLost", pass: Math.abs(lap2Result.timeLost - 2.316) < 0.01 },
+    { name: "stintPatterns", pass: stintAnalysis.stintSummary.patterns.length > 0 },
+    {
+      name: "stintWorsening",
+      pass: stintAnalysis.stintSummary.worseningIssues.includes("traction_loss"),
+    },
+    {
+      name: "stintCoaching",
+      pass: typeof stintCoaching === "string" && stintCoaching.length > 20,
+    },
+  ];
 
-console.log("\n--- Level 2 Validation ---");
-stintChecks.forEach((c) => console.log(`${c.pass ? "✅" : "❌"} ${c.name}`));
+  console.log("\n--- Level 2 Validation ---");
+  for (const c of stintChecks) console.log(`${c.pass ? "✅" : "❌"} ${c.name}`);
 
-if (stintChecks.every((c) => c.pass)) {
-  console.log("\n✅ Stint analysis correct.");
-} else {
-  console.log("\n❌ Stint analysis has issues.");
-}
+  if (stintChecks.every((c) => c.pass)) {
+    console.log("\n✅ Stint analysis correct.");
+  } else {
+    console.log("\n❌ Stint analysis has issues.");
+  }
 
-console.log("\n--- Stint Analysis ---");
-stintAnalysis.laps.forEach((lapAnalysis, i) => {
-  const lapResult = generateCoaching(lapAnalysis, config);
-  console.log(`\nLap ${i + 1}:`);
-  console.log(JSON.stringify(lapResult, null, 2));
-});
-console.log("---------------------");
-
-if (stintAnalysis.stintSummary.patterns.length > 0) {
-  console.log("\n--- Stint Coaching ---");
-  console.log(stintCoaching);
+  console.log("\n--- Stint Analysis ---");
+  stintAnalysis.laps.forEach((lapAnalysis, i) => {
+    const lapResult = generateCoaching(lapAnalysis, config);
+    console.log(`\nLap ${i + 1}:`);
+    console.log(JSON.stringify(lapResult, null, 2));
+  });
   console.log("---------------------");
-}
+
+  if (stintAnalysis.stintSummary.patterns.length > 0) {
+    console.log("\n--- Stint Coaching ---");
+    console.log(stintCoaching);
+    console.log("---------------------");
+  }
 }
 
 /**

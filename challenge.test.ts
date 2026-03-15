@@ -1,5 +1,5 @@
-import { describe, test, expect } from "bun:test";
-import { analyzeLap, detectIssue, generateCoaching, referenceLap, driverLap } from "./challenge";
+import { describe, expect, test } from "bun:test";
+import { analyzeLap, detectIssue, driverLap, generateCoaching, referenceLap } from "./challenge";
 
 const config = { coachVoice: "generic" as const, units: "metric" as const };
 
