@@ -302,7 +302,7 @@ export const driverLap: DriverLap = {
 
 // Second driver lap — stint lap 14, same session
 // Tyres are degraded, driver is managing pace
-const driverLap2: DriverLap = {
+export const driverLap2: DriverLap = {
   track: "Spa-Francorchamps",
   car: "Porsche 963 LMdh",
   totalTime: 136.841,
@@ -554,7 +554,7 @@ function generateStintSummary(lapAnalyses: LapAnalysis[]): StintSummary {
   };
 }
 
-function analyzeStint(reference: ReferenceLap, driverLaps: DriverLap[]): StintAnalysis {
+export function analyzeStint(reference: ReferenceLap, driverLaps: DriverLap[]): StintAnalysis {
   const laps = driverLaps.map((lap) => analyzeLap(reference, lap));
 
   const stintSummary = generateStintSummary(laps);
@@ -635,7 +635,7 @@ export function generateCoaching(analysis: LapAnalysis, config: Config): Coachin
   };
 }
 
-function generateStintCoaching(stintSummary: StintSummary, config: Config): string {
+export function generateStintCoaching(stintSummary: StintSummary, config: Config): string {
   if (config.coachVoice === "pitgpt") {
     return generatePitGPTStintMessage(stintSummary);
   }
