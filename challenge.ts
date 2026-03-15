@@ -571,7 +571,7 @@ export function generateCoaching(
 
 if (import.meta.main) {
 const config: Config = {
-  coachVoice: "generic",
+  coachVoice: "pitgpt",
   units: "metric",
 };
 

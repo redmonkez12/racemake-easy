@@ -1,2 +1,4 @@
 - 2026-03-15T00:00:00Z TOM-503: BLOCKED — task not implementable because `challenge.ts` is absent in this workspace. `analyzeLap/findings.sort` is not present in any tracked file. No code changes made.
 - Validation: `rg --files -g '!node_modules/**'`, `rg` symbol scans for `analyzeLap|problemSector|timeLost|traction_loss|challenge.ts`, and direct file lookups all returned no matches.
+- 2026-03-15T00:00:00Z TOM-504: DONE — changed runner config in `challenge.ts` to `coachVoice: "pitgpt"` only; no code paths or other config values modified.
+- Validation: Verified the updated config line with `rg` and direct file read; runtime tests were not executed.
