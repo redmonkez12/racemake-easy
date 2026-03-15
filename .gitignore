@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+logs/*.log
+state/ralph.lock
+state/agent-status.json
+state/current-task.md
