@@ -1,0 +1,1 @@
+- 2026-03-15T00:00:00Z TOM-503: Missing implementation target. Requested one-line fix is in `challenge.ts` (`analyzeLap` sort order), but `challenge.ts` is not present in repository snapshot; only `scripts/*.ts` files exist. Need workspace with application source or path update before implementation.
