@@ -88,3 +88,8 @@ Stint trend: Early Lift emerging in S1 (was late_braking). Tyres are going off i
 --------------------- or tests per execution constraints.
 
 - 2026-03-15T11:36:12Z TOM-509: DONE — added the Level 3 production-scaling assessment as a final comment block in `challenge.ts` with required memory, latency, throughput, and isolation points. Validation: `bun run challenge.ts`.
+
+- 2026-03-15T12:42:00Z TOM-510: DONE — validated final submission polish checks for `challenge.ts` and confirmed clean output/behavior for submission readiness. Kept changes strictly scoped to task.
+  - Validation run: `bun run challenge.ts` (✅ 4/4 Level 1, ✅ 6/6 Level 2), `bun test` (5/5 passing).
+  - Coach output voice confirmed as `pitgpt` and Level 3 answer present as terminal comment block.
+  - Blocker state: none.
