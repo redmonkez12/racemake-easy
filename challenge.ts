@@ -825,3 +825,29 @@ if (stintAnalysis.stintSummary.patterns.length > 0) {
   console.log("---------------------");
 }
 }
+
+/**
+ * LEVEL 3 — Production Scaling Assessment
+ * ========================================
+ *
+ * Current state: 1 car, 1-2 laps, sector-level data, synchronous processing.
+ * Production target: 20+ cars, 50+ laps each, telemetry at 120 Hz.
+ *
+ * What breaks first:
+ *
+ * 1. MEMORY — Full lap objects accumulate in memory; 20×50 sessions grows unbounded.
+ *    Stream sectors, discard raw telemetry after analysis, keep findings only.
+ *
+ * 2. LATENCY — analyzeLap waits for full-lap completion before output.
+ *    Engineers need sector feedback in seconds.
+ *    Process each sector as it arrives and emit coaching immediately.
+ *
+ * 3. THROUGHPUT — 20 cars × 120 Hz is 2400 EPS; single-threaded analysis blocks the loop.
+ *    Use async stages: ingestion queue, worker pool, coaching API.
+ *
+ * 4. ISOLATION — one car can stall others with no per-car backpressure.
+ *    Use per-car pipelines with independent queues and throttles.
+ *
+ * Summary: memory breaks first (unbounded accumulation), then full-lap latency.
+ * The fix is sector-level streaming plus per-car worker isolation.
+ */
