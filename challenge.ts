@@ -645,6 +645,98 @@ export function generateCoaching(
   };
 }
 
+function generateStintCoaching(stintSummary: StintSummary, config: Config): string {
+  if (config.coachVoice === "pitgpt") {
+    return generatePitGPTStintMessage(stintSummary);
+  }
+  return generateGenericStintMessage(stintSummary);
+}
+
+function generatePitGPTStintMessage(summary: StintSummary): string {
+  const messages: string[] = [];
+
+  if (summary.patterns.length > 0) {
+    messages.push(`Stint trend: ${summary.patterns[0]}.`);
+  } else {
+    messages.push("Stint trend is flat, no major slide yet.");
+  }
+
+  const earlyLiftPatterns = summary.patterns.filter((pattern) =>
+    ["early_lift", "early lift"].some((token) => pattern.toLowerCase().includes(token))
+  );
+  const tractionPatterns = summary.patterns.filter((pattern) =>
+    pattern.toLowerCase().includes("traction")
+  );
+
+  const earlyLiftSectors = earlyLiftPatterns
+    .map((pattern) => {
+      const sectorMatch = pattern.match(/S\d+/);
+      return sectorMatch?.[0];
+    })
+    .filter(Boolean);
+
+  const uniqueEarlyLiftSectors = [...new Set(earlyLiftSectors)];
+  const earlyLiftSectorClause = uniqueEarlyLiftSectors.length > 0
+    ? ` in ${uniqueEarlyLiftSectors.join(" and ")}`
+    : "";
+
+  const tractionSectorClause = [...new Set(
+    tractionPatterns
+      .map((pattern) => {
+        const sectorMatch = pattern.match(/S\d+/);
+        return sectorMatch?.[0];
+      })
+      .filter(Boolean)
+  )].join(" and ");
+
+  const tractionClause = tractionSectorClause ? ` in ${tractionSectorClause}` : "";
+
+  if (summary.worseningIssues.includes("traction_loss")) {
+    messages.push(
+      `Tyres are going off${tractionClause}. Smooth the exits and don't overdrive the corners.`
+    );
+  }
+
+  if (earlyLiftPatterns.length > 0) {
+    messages.push(
+      `You're lifting early${earlyLiftSectorClause} — keep that compensation and protect the rear.`
+    );
+  }
+
+  if (messages.length === 1) {
+    messages.push("Keep the setup steady and look for consistency from here.");
+  }
+
+  return messages.slice(0, 3).join(" ");
+}
+
+function generateGenericStintMessage(summary: StintSummary): string {
+  if (summary.patterns.length === 0) {
+    return "Stint analysis: no significant cross-lap trend detected.";
+  }
+
+  const patternText = summary.patterns.join(", ");
+  const recommendations: string[] = [];
+
+  if (summary.worseningIssues.includes("traction_loss")) {
+    recommendations.push("recommend reduced throttle application on exits.");
+  }
+
+  const earlyLiftPatterns = summary.patterns.some((pattern) =>
+    pattern.toLowerCase().includes("early lift")
+  );
+
+  if (earlyLiftPatterns) {
+    recommendations.push("early lift behavior indicates tyre degradation compensation.");
+  }
+
+  const recommendationText = recommendations.length > 0
+    ? ` ${recommendations.join(" ")}`
+    : "";
+
+  return `Stint analysis: ${patternText}.${recommendationText}`;
+}
+
 // ============================================================
 // RUNNER
 // ============================================================
@@ -654,6 +746,7 @@ const config: Config = {
   coachVoice: "pitgpt",
   units: "metric",
 };
+let stintCoaching = "";
 
 const analysis = analyzeLap(referenceLap, driverLap);
 const result = generateCoaching(analysis, config);
@@ -695,4 +788,11 @@ stintAnalysis.laps.forEach((lapAnalysis, i) => {
   console.log(JSON.stringify(lapResult, null, 2));
 });
 console.log("---------------------");
+
+if (stintAnalysis.stintSummary.patterns.length > 0) {
+  stintCoaching = generateStintCoaching(stintAnalysis.stintSummary, config);
+  console.log("\n--- Stint Coaching ---");
+  console.log(stintCoaching);
+  console.log("---------------------");
+}
 }
